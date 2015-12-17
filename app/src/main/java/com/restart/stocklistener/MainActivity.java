@@ -1,6 +1,10 @@
 package com.restart.stocklistener;
 
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.view.View;
@@ -12,6 +16,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -98,4 +106,46 @@ public class MainActivity extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+
+    //test cases for the json file view
+    //starts here
+    //version 1 @8:51 PM by harsukh singh
+    public void create_file()
+    {
+        String externDir = Environment.getExternalStorageDirectory().toString();
+        File directory = new File(externDir, "stock_data");
+        directory.mkdir();
+        File file = new File(directory, "stock_data.json" );
+        try
+        {
+            file.createNewFile();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
+        FileGet getter = new FileGet();
+        getter.get_file("http://www.bloomberg.com/markets/chart/data/1D/AAPL:US", file);
+        showFile("stock_data/stock_data.json");
+    }
+    public void showFile(String to_show)
+    {
+        File file = new File(Environment.getExternalStorageDirectory()+to_show);
+        PackageManager packageManager = getPackageManager();
+        Intent testIntent = new Intent(Intent.ACTION_VIEW);
+        testIntent.setType("application/stock_data");
+        List list = packageManager.queryIntentActivities(testIntent, PackageManager.MATCH_DEFAULT_ONLY);
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_VIEW);
+        Uri uri = Uri.fromFile(file);
+        intent.setDataAndType(uri, "application/stock_data");
+        startActivity(intent);
+    }
+    public void sendStockData(View view)
+    {
+        Intent intent = new Intent(this, StockDataActivity.class);
+        startActivity(intent);
+    }
+
+
 }
