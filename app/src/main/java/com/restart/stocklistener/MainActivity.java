@@ -1,18 +1,16 @@
 package com.restart.stocklistener;
 
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.app.Activity;
-import android.widget.ScrollView;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Button;
-import android.widget.TextView;
-import android.widget.EditText;
-import android.widget.CheckBox;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -30,16 +28,21 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.DecimalFormat;
 
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, Button.OnClickListener {
 
     private final String TAG = "com.restart.stocklisten";
-    private Button button;
+    private String company;
+    private Context context;
+    private Button[] button = new Button[100];
+    private int buttons = 0;
 
     /**
      * Create and assign widgets to ones in the layout
+     *
      * @param savedInstanceState on create method
      */
     @Override
@@ -48,26 +51,43 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        context = getApplicationContext();
 
-        button = (Button) findViewById(R.id.button);
-        ScrollView sv = new ScrollView(this);
-        LinearLayout ll = (LinearLayout) findViewById(R.id.content_view);
+        final LinearLayout ll = (LinearLayout) findViewById(R.id.Linear_view);
         ll.setOrientation(LinearLayout.VERTICAL);
-
-        final String text = "This is the text";
-        for(int i = 0; i < 100; i++) {
-        Button tv = new Button(this);
-        tv.setText(text);
-        ll.addView(tv);
-        }
-
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                        alert.setTitle("New Stock");
+                        alert.setMessage("Input the stock you wish to add.\nEx: appl, amzn, etc...");
+                        final EditText input = new EditText(context);
+                        alert.setView(input);
+
+                        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                String value = input.getText().toString();
+                                button[buttons] = new Button(context);
+                                final String load = "Loading...";
+                                button[buttons].setText(load);
+                                ll.addView(button[buttons]);
+                                parseJSON(value, buttons);
+                                ++buttons;
+                            }
+                        });
+
+                        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                            }
+                        });
+                        alert.show();
+                    }
+                });
             }
         });
 
@@ -87,7 +107,9 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
-        parseJSON();
+        for (int i = 0; i < buttons; i++) {
+            parseJSON("bac", i);
+        }
     }
 
     @Override
@@ -140,7 +162,7 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    private void parseJSON() {
+    private void parseJSON(final String company, final int buttonvalue) {
         AsyncTask.execute(new Runnable() {
             public void run() {
                 String strContent = "";
@@ -148,7 +170,7 @@ public class MainActivity extends AppCompatActivity
                 try {
                     URL urlHandle = new URL("http://query.yahooapis.com/v1/public/yql?q=select%20%" +
                             "2a%20from%20yahoo.finance.quotes%20where%20symbol%20in%20%28%22" +
-                            "aapl" + // <-- Company stock goes here
+                            company + // <-- Company stock goes here
                             "%22%29%0A%09%09&env=http%3A%2F%2Fdatatables.org%2Falltables.env&" +
                             "format=json");
                     URLConnection urlconnectionHandle = urlHandle.openConnection();
@@ -185,16 +207,16 @@ public class MainActivity extends AppCompatActivity
                             .getJSONObject("results")
                             .getJSONObject("quote");
 
+                    DecimalFormat decimalFormat = new DecimalFormat("0.00");
                     final String symbol = results.getString("symbol");
-                    final String bid = results.getString("Bid");
-                    final String change = results.getString("Change");
-                    Log.d(TAG, "Here are the values " + symbol + ", " + bid + ", " + change);
-                    final String buttonS = symbol + " " + bid  + " " + change;
+                    final String bid = decimalFormat.format(Float.parseFloat(results.getString("Bid")));
+                    final String change = decimalFormat.format(Float.parseFloat(results.getString("Change")));
+                    final String result = symbol + " " + bid + " " + change;
 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            button.setText(buttonS);
+                            button[buttonvalue].setText(result);
                         }
                     });
 
@@ -212,51 +234,4 @@ public class MainActivity extends AppCompatActivity
         startActivity(intent);
         Log.d(TAG, "Button was clicked.");
     }
-
-
-
-
-
-
-
-
-/*    //test cases for the json file view
-    //starts here
-    //version 1 @8:51 PM by harsukh singh
-    public void create_file()
-    {
-        String externDir = Environment.getExternalStorageDirectory().toString();
-        File directory = new File(externDir, "stock_data");
-        directory.mkdir();
-        File file = new File(directory, "stock_data.json" );
-        try
-        {
-            file.createNewFile();
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-        }
-        FileGet getter = new FileGet();
-        getter.get_file("http://www.bloomberg.com/markets/chart/data/1D/AAPL:US", file);
-        showFile("stock_data/stock_data.json");
-    }
-    public void showFile(String to_show)
-    {
-        File file = new File(Environment.getExternalStorageDirectory()+to_show);
-        PackageManager packageManager = getPackageManager();
-        Intent testIntent = new Intent(Intent.ACTION_VIEW);
-        testIntent.setType("application/stock_data");
-        List list = packageManager.queryIntentActivities(testIntent, PackageManager.MATCH_DEFAULT_ONLY);
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_VIEW);
-        Uri uri = Uri.fromFile(file);
-        intent.setDataAndType(uri, "application/stock_data");
-        startActivity(intent);
-    }
-    public void sendStockData(View view)
-    {
-        Intent intent = new Intent(this, StockDataActivity.class);
-        startActivity(intent);
-    }*/
 }

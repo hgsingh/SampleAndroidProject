@@ -14,10 +14,17 @@
     tools:showIn="@layout/app_bar_main"
     android:weightSum="1">
 
-    <Button
-        android:id="@+id/button"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:onClick="onClick" />
+        android:layout_height="match_parent"
+        android:id="@+id/scrollView"
+        android:layout_gravity="center_vertical" >
+
+        <LinearLayout
+            android:id="@+id/Linear_view"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"></LinearLayout>
+    </ScrollView>
 
 </LinearLayout>
