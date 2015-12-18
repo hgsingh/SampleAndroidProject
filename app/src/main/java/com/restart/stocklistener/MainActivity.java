@@ -1,6 +1,7 @@
 package com.restart.stocklistener;
 
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -15,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,16 +27,23 @@ import java.net.URLConnection;
 
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, Button.OnClickListener {
 
     private final String TAG = "com.restart.stocklisten";
+    private Button button;
 
+    /**
+     * Create and assign widgets to ones in the layout
+     * @param savedInstanceState on create method
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        button = (Button) findViewById(R.id.button);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -122,7 +131,7 @@ public class MainActivity extends AppCompatActivity
                 try {
                     URL urlHandle = new URL("http://query.yahooapis.com/v1/public/yql?q=select%20%" +
                             "2a%20from%20yahoo.finance.quotes%20where%20symbol%20in%20%28%22" +
-                            "hpq" + // <-- Company stock goes here
+                            "aapl" + // <-- Company stock goes here
                             "%22%29%0A%09%09&env=http%3A%2F%2Fdatatables.org%2Falltables.env&" +
                             "format=json");
                     URLConnection urlconnectionHandle = urlHandle.openConnection();
@@ -162,7 +171,16 @@ public class MainActivity extends AppCompatActivity
                     final String symbol = results.getString("symbol");
                     final String bid = results.getString("Bid");
                     final String change = results.getString("Change");
-                    Log.d(TAG, "Here are the values " + symbol + ", " + bid  + ", " + change);
+                    Log.d(TAG, "Here are the values " + symbol + ", " + bid + ", " + change);
+                    final String buttonS = symbol + " " + bid  + " " + change;
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            button.setText(buttonS);
+                        }
+                    });
+
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -171,19 +189,12 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+    @Override
+    public void onClick(View v) {
+        Intent intent = new Intent(this, StockDataActivity.class);
+        startActivity(intent);
+        Log.d(TAG, "Button was clicked.");
+    }
 
 
 
