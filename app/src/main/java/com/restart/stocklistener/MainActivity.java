@@ -4,6 +4,13 @@ package com.restart.stocklistener;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.app.Activity;
+import android.widget.ScrollView;
+import android.widget.LinearLayout;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.EditText;
+import android.widget.CheckBox;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.util.Log;
@@ -16,7 +23,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,6 +50,17 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         button = (Button) findViewById(R.id.button);
+        ScrollView sv = new ScrollView(this);
+        LinearLayout ll = (LinearLayout) findViewById(R.id.content_view);
+        ll.setOrientation(LinearLayout.VERTICAL);
+
+        final String text = "This is the text";
+        for(int i = 0; i < 100; i++) {
+        Button tv = new Button(this);
+        tv.setText(text);
+        ll.addView(tv);
+        }
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
