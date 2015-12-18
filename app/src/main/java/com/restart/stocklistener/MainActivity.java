@@ -1,12 +1,11 @@
 package com.restart.stocklistener;
 
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
+
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -17,12 +16,18 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    private final String TAG = "com.restart.stocklisten";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +55,15 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
     }
 
+    /**
+     * We will update any main menu stock values, when the activity resumes.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        parseJSON();
+    }
+
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -62,19 +76,14 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
         }
@@ -82,14 +91,12 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
-            // Handle the camera action
+
         } else if (id == R.id.nav_gallery) {
 
         } else if (id == R.id.nav_slideshow) {
@@ -107,7 +114,85 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    //test cases for the json file view
+    private void parseJSON() {
+        AsyncTask.execute(new Runnable() {
+            public void run() {
+                String strContent = "";
+
+                try {
+                    URL urlHandle = new URL("http://query.yahooapis.com/v1/public/yql?q=select%20%" +
+                            "2a%20from%20yahoo.finance.quotes%20where%20symbol%20in%20%28%22" +
+                            "hpq" + // <-- Company stock goes here
+                            "%22%29%0A%09%09&env=http%3A%2F%2Fdatatables.org%2Falltables.env&" +
+                            "format=json");
+                    URLConnection urlconnectionHandle = urlHandle.openConnection();
+                    InputStream inputstreamHandle = urlconnectionHandle.getInputStream();
+
+                    try {
+                        int intRead;
+                        byte[] byteBuffer = new byte[1024];
+
+                        do {
+                            intRead = inputstreamHandle.read(byteBuffer);
+
+                            if (intRead == 0) {
+                                break;
+
+                            } else if (intRead == -1) {
+                                break;
+                            }
+
+                            strContent += new String(byteBuffer, 0, intRead, "UTF-8");
+                        } while (true);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    inputstreamHandle.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    JSONObject results = new JSONObject(strContent)
+                            .getJSONObject("query")
+                            .getJSONObject("results")
+                            .getJSONObject("quote");
+
+                    final String symbol = results.getString("symbol");
+                    final String bid = results.getString("Bid");
+                    final String change = results.getString("Change");
+                    Log.d(TAG, "Here are the values " + symbol + ", " + bid  + ", " + change);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*    //test cases for the json file view
     //starts here
     //version 1 @8:51 PM by harsukh singh
     public void create_file()
@@ -145,7 +230,5 @@ public class MainActivity extends AppCompatActivity
     {
         Intent intent = new Intent(this, StockDataActivity.class);
         startActivity(intent);
-    }
-
-
+    }*/
 }
