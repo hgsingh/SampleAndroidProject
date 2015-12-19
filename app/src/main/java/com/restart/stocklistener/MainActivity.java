@@ -21,6 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,7 +36,6 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, Button.OnClickListener {
 
     private final String TAG = "com.restart.stocklisten";
-    private String company;
     private Context context;
     private Button[] button = new Button[100];
     private int buttons = 0;
@@ -65,19 +65,26 @@ public class MainActivity extends AppCompatActivity
                     public void run() {
                         AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
                         alert.setTitle("New Stock");
-                        alert.setMessage("Input the stock you wish to add.\nEx: appl, amzn, etc...");
+                        alert.setMessage("Input the stock you wish to add.\nEx: aapl, amzn, etc...");
                         final EditText input = new EditText(context);
                         alert.setView(input);
 
                         alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int whichButton) {
-                                String value = input.getText().toString();
-                                button[buttons] = new Button(context);
-                                final String load = "Loading...";
-                                button[buttons].setText(load);
-                                ll.addView(button[buttons]);
-                                parseJSON(value, buttons);
-                                ++buttons;
+                                if (input.getText().toString().trim().length() == 0) {
+                                    Toast.makeText(context, "Nothing was entered!",
+                                            Toast.LENGTH_SHORT).show();
+                                } else {
+                                    String value = input.getText().toString();
+                                    final int currenti = buttons;
+                                    button[currenti] = new Button(context);
+                                    final String load = "Loading...";
+                                    button[currenti].setText(load);
+                                    ll.addView(button[currenti]);
+                                    parseJSON(value, currenti);
+                                    //button[buttons].setOnClickListener();
+                                    ++buttons;
+                                }
                             }
                         });
 
@@ -220,9 +227,24 @@ public class MainActivity extends AppCompatActivity
                         }
                     });
 
-
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Are you connected to internet?",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+
+                } catch (Exception e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Correct company abbreviation?",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+
                 }
             }
         });
@@ -230,8 +252,18 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onClick(View v) {
-        Intent intent = new Intent(this, StockDataActivity.class);
-        startActivity(intent);
-        Log.d(TAG, "Button was clicked.");
+        switch (v.getId()) {
+            case  R.id.clickButton1: {
+                // do something for button 1 click
+                break;
+            }
+
+            case R.id.clickButton2: {
+                // do something for button 2 click
+                break;
+            }
+
+            //.... etc
+        }
     }
 }
