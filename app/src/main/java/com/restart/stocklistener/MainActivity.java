@@ -5,13 +5,13 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Button;
 import android.support.design.widget.FloatingActionButton;
-import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -33,7 +33,7 @@ import java.text.DecimalFormat;
 
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, Button.OnClickListener {
+        implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "com.restart.stocklisten";
     private Context context;
@@ -82,7 +82,6 @@ public class MainActivity extends AppCompatActivity
                                     button[currenti].setText(load);
                                     ll.addView(button[currenti]);
                                     parseJSON(value, currenti);
-                                    //button[buttons].setOnClickListener();
                                     ++buttons;
                                 }
                             }
@@ -106,17 +105,6 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-    }
-
-    /**
-     * We will update any main menu stock values, when the activity resumes.
-     */
-    @Override
-    protected void onResume() {
-        super.onResume();
-        for (int i = 0; i < buttons; i++) {
-            parseJSON("bac", i);
-        }
     }
 
     @Override
@@ -216,14 +204,40 @@ public class MainActivity extends AppCompatActivity
 
                     DecimalFormat decimalFormat = new DecimalFormat("0.00");
                     final String symbol = results.getString("symbol");
-                    final String bid = decimalFormat.format(Float.parseFloat(results.getString("Bid")));
-                    final String change = decimalFormat.format(Float.parseFloat(results.getString("Change")));
-                    final String result = symbol + " " + bid + " " + change;
+                    String bid = "$" + decimalFormat.format(Float.parseFloat(results.getString("Bid")));
+                    String change = decimalFormat.format(Float.parseFloat(results.getString("Change")));
+                    String finalchange;
+                    final Boolean updown;
+
+
+                    if (change.substring(0, 1).equals("-")) {
+                        finalchange = "▼" + change;
+                        updown = true;
+                    } else {
+                        finalchange = "▲" + change;
+                        updown = false;
+                    }
+
+                    final String result = symbol + "   " + bid + "   " + finalchange;
 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             button[buttonvalue].setText(result);
+                            if (updown) {
+                                button[buttonvalue].setTextColor(Color.RED);
+                            } else {
+                                button[buttonvalue].setTextColor(Color.GREEN);
+                            }
+
+                            button[buttonvalue].setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    Intent intent = new Intent(context, StockDataActivity.class);
+                                    intent.putExtra("symbol", symbol);
+                                    startActivity(intent);
+                                }
+                            });
                         }
                     });
 
@@ -233,6 +247,7 @@ public class MainActivity extends AppCompatActivity
                         public void run() {
                             Toast.makeText(context, "Are you connected to internet?",
                                     Toast.LENGTH_LONG).show();
+                            button[buttonvalue].setVisibility(View.GONE);
                         }
                     });
 
@@ -242,28 +257,12 @@ public class MainActivity extends AppCompatActivity
                         public void run() {
                             Toast.makeText(context, "Correct company abbreviation?",
                                     Toast.LENGTH_LONG).show();
+                            button[buttonvalue].setVisibility(View.GONE);
                         }
                     });
 
                 }
             }
         });
-    }
-
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case  R.id.clickButton1: {
-                // do something for button 1 click
-                break;
-            }
-
-            case R.id.clickButton2: {
-                // do something for button 2 click
-                break;
-            }
-
-            //.... etc
-        }
     }
 }
