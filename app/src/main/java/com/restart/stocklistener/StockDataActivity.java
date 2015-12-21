@@ -9,16 +9,43 @@ import android.webkit.WebViewClient;
 
 
 public class StockDataActivity extends ActionBarActivity {
+    private String company;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_stock_data);
-        WebView webView = (WebView) findViewById(R.id.webView);
+
+        Bundle bundle = getIntent().getExtras();
+        if (bundle != null) {
+            company = bundle.getString("symbol");
+        }
+
+        final WebView webView = (WebView) findViewById(R.id.webView);
         webView.getSettings().setJavaScriptEnabled(true);
-        webView.loadUrl("https://finance.yahoo.com/echarts?s=AAPL#{\"range\":\"1d\",\"" +
+        webView.setWebViewClient(new WebViewController() {
+            @Override
+            public void onPageFinished(WebView view, String url)
+            {
+                /* Removes div elements from the webView
+                *  1. News article at the bottom
+                *  2. A search bar at the top
+                *  3.
+                *  4.
+                *  */
+                webView.loadUrl("javascript:document.getElementById(\"td-applet-mw-quote-news\").setAttribute(\"style\",\"display:none;\");");
+                webView.loadUrl("javascript:document.getElementById(\"mediaquotessearchgs_2_container\").setAttribute(\"style\",\"display:none;\");");
+                webView.loadUrl("javascript:document.getElementById(\"yucs-search\").setAttribute(\"style\",\"display:none;\");");
+
+            }
+        });
+
+
+        webView.loadUrl("https://finance.yahoo.com/echarts?s=" +
+                company +
+                "#{\"range\":\"1d\",\"" +
                 "didDisablePrePost\":true,\"allowChartStacking\":true}");
-        webView.setWebViewClient(new WebViewController());
+
     }
 
     public class WebViewController extends WebViewClient {

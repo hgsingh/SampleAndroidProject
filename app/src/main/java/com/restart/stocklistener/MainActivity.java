@@ -1,12 +1,17 @@
 package com.restart.stocklistener;
 
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Button;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -16,7 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,16 +29,20 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.DecimalFormat;
 
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, Button.OnClickListener {
+        implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = "com.restart.stocklisten";
-    private Button button;
+    private Context context;
+    private Button[] button = new Button[100];
+    private int buttons = 0;
 
     /**
      * Create and assign widgets to ones in the layout
+     *
      * @param savedInstanceState on create method
      */
     @Override
@@ -42,15 +51,49 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        context = getApplicationContext();
 
-        button = (Button) findViewById(R.id.button);
+        final LinearLayout ll = (LinearLayout) findViewById(R.id.Linear_view);
+        ll.setOrientation(LinearLayout.VERTICAL);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                        alert.setTitle("New Stock");
+                        alert.setMessage("Input the stock you wish to add.\nEx: aapl, amzn, etc...");
+                        final EditText input = new EditText(context);
+                        alert.setView(input);
+
+                        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                if (input.getText().toString().trim().length() == 0) {
+                                    Toast.makeText(context, "Nothing was entered!",
+                                            Toast.LENGTH_SHORT).show();
+                                } else {
+                                    String value = input.getText().toString();
+                                    final int currenti = buttons;
+                                    button[currenti] = new Button(context);
+                                    final String load = "Loading...";
+                                    button[currenti].setText(load);
+                                    ll.addView(button[currenti]);
+                                    parseJSON(value, currenti);
+                                    ++buttons;
+                                }
+                            }
+                        });
+
+                        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                            }
+                        });
+                        alert.show();
+                    }
+                });
             }
         });
 
@@ -62,15 +105,6 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-    }
-
-    /**
-     * We will update any main menu stock values, when the activity resumes.
-     */
-    @Override
-    protected void onResume() {
-        super.onResume();
-        parseJSON();
     }
 
     @Override
@@ -123,7 +157,7 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    private void parseJSON() {
+    private void parseJSON(final String company, final int buttonvalue) {
         AsyncTask.execute(new Runnable() {
             public void run() {
                 String strContent = "";
@@ -131,7 +165,7 @@ public class MainActivity extends AppCompatActivity
                 try {
                     URL urlHandle = new URL("http://query.yahooapis.com/v1/public/yql?q=select%20%" +
                             "2a%20from%20yahoo.finance.quotes%20where%20symbol%20in%20%28%22" +
-                            "aapl" + // <-- Company stock goes here
+                            company + // <-- Company stock goes here
                             "%22%29%0A%09%09&env=http%3A%2F%2Fdatatables.org%2Falltables.env&" +
                             "format=json");
                     URLConnection urlconnectionHandle = urlHandle.openConnection();
@@ -168,78 +202,67 @@ public class MainActivity extends AppCompatActivity
                             .getJSONObject("results")
                             .getJSONObject("quote");
 
+                    DecimalFormat decimalFormat = new DecimalFormat("0.00");
                     final String symbol = results.getString("symbol");
-                    final String bid = results.getString("Bid");
-                    final String change = results.getString("Change");
-                    Log.d(TAG, "Here are the values " + symbol + ", " + bid + ", " + change);
-                    final String buttonS = symbol + " " + bid  + " " + change;
+                    String bid = "$" + decimalFormat.format(Float.parseFloat(results.getString("Bid")));
+                    String change = decimalFormat.format(Float.parseFloat(results.getString("Change")));
+                    String finalchange;
+                    final Boolean updown;
+
+
+                    if (change.substring(0, 1).equals("-")) {
+                        finalchange = "▼" + change;
+                        updown = true;
+                    } else {
+                        finalchange = "▲" + change;
+                        updown = false;
+                    }
+
+                    final String result = symbol + "   " + bid + "   " + finalchange;
 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            button.setText(buttonS);
+                            button[buttonvalue].setText(result);
+                            if (updown) {
+                                button[buttonvalue].setTextColor(Color.RED);
+                            } else {
+                                button[buttonvalue].setTextColor(Color.GREEN);
+                            }
+
+                            button[buttonvalue].setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    Intent intent = new Intent(context, StockDataActivity.class);
+                                    intent.putExtra("symbol", symbol);
+                                    startActivity(intent);
+                                }
+                            });
                         }
                     });
 
-
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Are you connected to internet?",
+                                    Toast.LENGTH_LONG).show();
+                            button[buttonvalue].setVisibility(View.GONE);
+                        }
+                    });
+
+                } catch (Exception e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Correct company abbreviation?",
+                                    Toast.LENGTH_LONG).show();
+                            button[buttonvalue].setVisibility(View.GONE);
+                        }
+                    });
+
                 }
             }
         });
     }
-
-    @Override
-    public void onClick(View v) {
-        Intent intent = new Intent(this, StockDataActivity.class);
-        startActivity(intent);
-        Log.d(TAG, "Button was clicked.");
-    }
-
-
-
-
-
-
-
-
-/*    //test cases for the json file view
-    //starts here
-    //version 1 @8:51 PM by harsukh singh
-    public void create_file()
-    {
-        String externDir = Environment.getExternalStorageDirectory().toString();
-        File directory = new File(externDir, "stock_data");
-        directory.mkdir();
-        File file = new File(directory, "stock_data.json" );
-        try
-        {
-            file.createNewFile();
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-        }
-        FileGet getter = new FileGet();
-        getter.get_file("http://www.bloomberg.com/markets/chart/data/1D/AAPL:US", file);
-        showFile("stock_data/stock_data.json");
-    }
-    public void showFile(String to_show)
-    {
-        File file = new File(Environment.getExternalStorageDirectory()+to_show);
-        PackageManager packageManager = getPackageManager();
-        Intent testIntent = new Intent(Intent.ACTION_VIEW);
-        testIntent.setType("application/stock_data");
-        List list = packageManager.queryIntentActivities(testIntent, PackageManager.MATCH_DEFAULT_ONLY);
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_VIEW);
-        Uri uri = Uri.fromFile(file);
-        intent.setDataAndType(uri, "application/stock_data");
-        startActivity(intent);
-    }
-    public void sendStockData(View view)
-    {
-        Intent intent = new Intent(this, StockDataActivity.class);
-        startActivity(intent);
-    }*/
 }
